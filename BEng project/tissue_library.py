@@ -50,15 +50,15 @@ TISSUE_PARAMS = {
 # Proton Density
 PROTOCOLS = {
     'protocol_1': {
-        'TR_MP2RAGE': 4000,    # (ms) - Total repetition time
+        'TR_MP2RAGE': 10000,    # (ms) - Total repetition time
         'TI1': 650,            # (ms) - First inversion time
-        'TI2': 2220,           # (ms) - Second inversion time
+        'TI2': 9000,           # (ms) - Second inversion time
         'alpha1': 5,           # (degrees) - First flip angle
-        'alpha2': 4,           # (degrees) - Second flip angle
+        'alpha2': 1,           # (degrees) - Second flip angle
         'TE': 3.0,             # (ms) - Echo time (estimated)
-        'partitions': 240,     # Number of slices in 3D volume
-        'GRAPPA_factor': 3,    # Parallel imaging acceleration factor
+        'partitions': 1,       # Number of slices in 3D volume
+        'GRAPPA_factor': 1,    # Parallel imaging acceleration factor
         'TR_GRE': 7.0,         # (ms) - Time between excitations (estimated)
-        'n': 80                # Calculated: partitions / GRAPPA_factor = 240/3
+        'n': 1                 # Calculated: partitions / GRAPPA_factor = 1/1
     }
 }
