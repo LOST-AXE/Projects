@@ -15,7 +15,7 @@ markers = ['o', 's', '^', 'v', '<', '>', 'D', 'p', '*', 'h', 'l']
 for iteration in range(10):  # run ten times from 0 to 9
     # Create a copy of the protocol and modify TI1
     protocol = PROTOCOLS['protocol_1'].copy()
-    protocol['TI1'] = 100 + iteration * 100  # Set to base + increment
+    protocol['TI1'] = 650 + iteration * 100  # Set to base + increment
 
     # Initialize simulator with modified protocol
     sim = MP2RAGESimulator(protocol)
