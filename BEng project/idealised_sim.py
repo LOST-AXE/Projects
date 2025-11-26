@@ -8,7 +8,8 @@ tissues = {
     "Grey Matter": TISSUE_PARAMS["grey_matter_adult"],
     "CSF": TISSUE_PARAMS["csf"],
 }
-
+angle_degree = PROTOCOLS["protocol_1"]["alpha1"]
+angle_radian = np.radians(angle_degree)
 # Define simplified inversion recovery formula
 
 def inversion_recovery_signal(T1, PD, TI, TR):
@@ -26,8 +27,8 @@ def inversion_recovery_signal(T1, PD, TI, TR):
     """
     M0 = PD  # Equilibrium magnetization proportional to PD
 
-    # Apply the formula: Mz(t) = M0 * {1 - 2*exp(-TI/T1) + exp(-TR/T1)}
-    Mz = M0 * (1 - 2 * np.exp(-TI / T1) + np.exp(-TR / T1))
+    # Apply the formula: Mz(t) = M0 * {1 - 2*exp(-TI/T1) + exp(-TR/T1)} * sin()
+    Mz = M0*(1 - 2 * np.exp(-TI / T1) + np.exp(-TR / T1))*np.sin(angle_radian)
 
     return Mz
 
@@ -35,7 +36,7 @@ def inversion_recovery_signal(T1, PD, TI, TR):
 
 # Protocol parameters
 TR_MP2RAGE = 10000  # Total repetition time (ms)
-TI1_values = [650 + i * 100 for i in range(94)]  # TI1 from 650 to 1550 ms
+TI1_values = [650 + i * 100 for i in range(94)]  # TI1 from 650 to 9950 ms
 TI2 = 9000  # Second inversion time (ms) - typical value
 
 # Calculate signals for different TI1 values
@@ -58,17 +59,13 @@ for TI1 in TI1_values:
         # Calculate INV1 signal (after first inversion)
         INV1 = inversion_recovery_signal(T1, PD, TI1, TR_MP2RAGE)
 
-        # Calculate INV2 signal (after second inversion)
-        # For simplicity, we'll use the same formula but with TI2
-
-
         # Store results
         results[tissue_name]['INV1'].append(INV1)
 
         print(
             f"{tissue_name:12} | INV1: {INV1:7.4f}")
 
-# STEP 5: Plot the results
+# Plot the results
 
 def find_best_poly_degree(x, y, max_degree=5):
     """Find best polynomial degree using simple RSS criterion"""
@@ -86,7 +83,6 @@ def find_best_poly_degree(x, y, max_degree=5):
             best_degree = degree
 
     return best_degree
-
 
 # Create the plot
 plt.figure(figsize=(12, 8))
