@@ -1,123 +1,88 @@
 import numpy as np
 import matplotlib.pyplot as plt
+
 from tissue_library import TISSUE_PARAMS, PROTOCOLS
 from mp2rage_simulator import MP2RAGESimulator
 
-# Create a figure for all iterations, 10 inches wide by 5 inches tall
-plt.figure(figsize=(10, 5))
 
-# Create a dictionary that maps tissue names to color codes
-colors = {"White Matter": "k", "Grey Matter": "r", "CSF": "b"}
-# Create a list of different marker shapes for each iteration
-markers = ['o', 's', '^', 'v', '<', '>', 'D', 'p', '*', 'h', 'l']
+def main():
+    colors = {"White Matter": "k", "Grey Matter": "r", "CSF": "b"}
 
-# Run simulation 10 times with increasing TI1
-for iteration in range(10):  # run ten times from 0 to 9
-    # Create a copy of the protocol and modify TI1
-    protocol = PROTOCOLS['protocol_1'].copy()
-    protocol['TI1'] = 650 + iteration * 100  # Set to base + increment
-
-    # Initialize simulator with modified protocol
-    sim = MP2RAGESimulator(protocol)
-
-    # Select tissues
     tissues = {
         "White Matter": TISSUE_PARAMS["white_matter_adult"],
         "Grey Matter": TISSUE_PARAMS["grey_matter_adult"],
         "CSF": TISSUE_PARAMS["csf"],
     }
 
-    # Calculate signals for each tissue
-    results = {}  # Create an empty dictionary to store results
-    for name, params in tissues.items():
-        INV1, INV2 = sim.calculate_signals(
-            T1=params["T1"],
-            PD=params["PD"],
-            T2star=params["T2star"]
-        )
-        # FIX: Convert to floats
-        INV1_float = float(INV1)
-        INV2_float = float(INV2)
-        results[name] = {"INV1": INV1_float, "INV2": INV2_float}
+    base_protocol = PROTOCOLS["protocol_1"].copy()
 
-    # Get UNI image for each tissue
-    for name, data in results.items():
-        INV1 = data["INV1"]
-        INV2 = data["INV2"]
-        UNI = INV1 / (INV2 + 1e-12)  # ratio form, avoid divide-by-zero
-        results[name]["UNI"] = UNI
+    # Keep TI2 - TI1 constant (Option A)
+    gap = base_protocol["TI2"] - base_protocol["TI1"]  # e.g. 1570ms
 
-    # Plot simulated INV1 and INV2 signals for this iteration
-    for name, data in results.items():
-        INV1_plot = data["INV1"]
-        INV2_plot = data["INV2"]
+    # Sweep setup
+    n_iters = 29
+    base_TI1 = 650
+    step_TI1 = 100
 
-        # Use different marker for each iteration
+    # Store values per tissue (only valid points)
+    TI1_values = []
+    INV1_series = {name: [] for name in tissues.keys()}
+
+    skipped = 0
+
+    for i in range(n_iters):
+        protocol = base_protocol.copy()
+        protocol["TI1"] = base_TI1 + i * step_TI1
+        protocol["TI2"] = protocol["TI1"] + gap  # <-- THE KEY OPTION A CHANGE
+
+        sim = MP2RAGESimulator(protocol, verbose=False)
+
+        # Only keep physically valid timing
+        if not sim.timing_is_valid():
+            skipped += 1
+            continue
+
+        TI1_values.append(sim.TI1)
+
+        for name, params in tissues.items():
+            inv1, inv2 = sim.calculate_signals(
+                T1=params["T1"],
+                PD=params["PD"],
+                T2star=params["T2star"],
+            )
+            INV1_series[name].append(float(inv1))
+
+    if len(TI1_values) == 0:
+        print("No valid points were generated. Increase TR_MP2RAGE or reduce TI1 sweep range.")
+        return
+
+    TI1_values = np.array(TI1_values)
+
+    # Plot joined points only
+    plt.figure(figsize=(10, 5))
+
+    for name in tissues.keys():
+        y = np.array(INV1_series[name])
         plt.plot(
-            [sim.TI1, sim.TI2],
-            [INV1_plot, INV2_plot],
-            marker=markers[iteration],
+            TI1_values, y,
+            marker="o",
+            linewidth=2,
             color=colors[name],
-            label=f"{name} (TI1={sim.TI1}ms)" if iteration == 0 else "",
-            alpha=0.7
+            label=f"{name} INV1"
         )
 
-    # Print values for this iteration
-    print(f"\nIteration {iteration + 1} (TI1 = {sim.TI1}ms):")
-    print("Tissue           INV1         INV2         UNI")
-    print("-----------------------------------------------")
-    for name, data in results.items():
-        print(
-            f"{name:12} {data['INV1']:10.6f} {data['INV2']:10.6f} {data['UNI']:10.6f}")
+    title = "MP2RAGE INV1 vs TI1 (7T) — Joined Points Only (Option A: TI2 shifts with TI1)"
+    if skipped > 0:
+        title += f"\n(skipped {skipped} invalid TI1 values due to TR/Timing limits)"
 
-plt.title(
-    "MP2RAGE Longitudinal Recovery Simulation (7T)\n10 Iterations with TI1 increasing by 100ms")
-plt.xlabel("Inversion Time (ms)")
-plt.ylabel("Longitudinal Magnetization (Mz)")
-plt.legend()
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
+    plt.title(title)
+    plt.xlabel("TI1 (ms)")
+    plt.ylabel("INV1 signal (a.u.)")
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-# Alternative visualization: Separate plots for each tissue
-fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-tissue_names = ["White Matter", "Grey Matter", "CSF"]
 
-for idx, tissue in enumerate(tissue_names):
-    # Reset for clean plotting
-    for iteration in range(10):
-        protocol = PROTOCOLS['protocol_1'].copy()
-        protocol['TI1'] = 1000 + iteration * 100
-        sim = MP2RAGESimulator(protocol)
-
-        params = TISSUE_PARAMS[
-            "white_matter_adult" if tissue == "White Matter" else
-            "grey_matter_adult" if tissue == "Grey Matter" else "csf"]
-
-        INV1, INV2 = sim.calculate_signals(
-            T1=params["T1"],
-            PD=params["PD"],
-            T2star=params["T2star"]
-        )
-
-        # FIX: Convert to floats here too
-        INV1_float = float(INV1)
-        INV2_float = float(INV2)
-
-        axes[idx].plot(
-            [sim.TI1, sim.TI2],
-            [INV1_float, INV2_float],  # Use the float values
-            marker=markers[iteration],
-            color=colors[tissue],
-            label=f"TI1={sim.TI1}ms",
-            alpha=0.7
-        )
-
-    axes[idx].set_title(f"{tissue}")
-    axes[idx].set_xlabel("Inversion Time (ms)")
-    axes[idx].set_ylabel("Longitudinal Magnetization (Mz)")
-    axes[idx].legend()
-    axes[idx].grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
+if __name__ == "__main__":
+    main()

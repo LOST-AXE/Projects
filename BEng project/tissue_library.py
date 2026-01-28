@@ -1,64 +1,34 @@
 """
-Tissue parameter library for 7T MP2RAGE simulations.
+Tissue parameter library + baseline MP2RAGE protocol for 7T simulations.
 
-This module provides tissue-specific MRI parameters (T1, T2*, PD) for
-simulating MP2RAGE signals at 7 Tesla. Parameters are sourced from rough
-logic - based estimates, peer-reviewed literature and Dr. Carmichael's
-previous work.
-
-Sources:
-    - T1 and PD* values for White and gray matter:
-        Dokumacı AS et al. Quantitative T1 and Effective Proton Density (PD*)
-        mapping in children and adults at 7T. 2024
-    - CSF T1 value at 7-T MRI:
-        Bluestein KT et al. T1 and proton density at 7 T in patients with
-         multiple sclerosis. Magn Reson Imaging. 2011;30(1):19-25.
-         doi:10.1016/j.mri.2011.02.006.
-    - T2* estimates for Gray matter at 7-T MRI:
-        Cohen-Adad J et al. T2* mapping and B0 orientation-dependence at 7 T
-        reveal cyto- and myeloarchitecture organization of the human cortex.
-        Neuroimage. 2012;60(2):1006-14. doi:10.1016/j.neuroimage.2012.01.053.
-
-    - Protocol parameters: From our MP2RAGE sequence optimization
+Option A setup:
+- We will sweep TI1.
+- We will keep the spacing (TI2 - TI1) constant by updating TI2 inside run_simulation.py.
+- n is set as excitations per GRE block (not total partitions).
 """
 
 TISSUE_PARAMS = {
-    'white_matter_adult': {
-        'T1': 1092,      # Dokumacı et al., Quantitative T1 and Effective
-                         # Proton Density.
-        'T2star': 28,    # Educated guess
-        'PD': 0.69       # Dokumacı et al., Quantitative T1 and Effective
-                         # Proton Density
-    },
-    'grey_matter_adult': {
-        'T1': 1690,      # Dokumacı et al., Quantitative T1 and Effective
-                         # Proton Density
-        'T2star': 32.2,  # Cohen-Adad et al., T2 mapping and B0
-                         # orientation-dependence
-        'PD': 0.81       # Dokumacı et al., Quantitative T1 and Effective
-                         # Proton Density
-    },
-
-    'csf': {
-        'T1': 4470,      # Bluestein et al., T1 and proton density at 7 T.
-        'T2star': 200,   # Educated Guess
-        'PD': 1.0        # Reference value
-    }
+    "white_matter_adult": {"T1": 1092, "T2star": 28, "PD": 0.69},
+    "grey_matter_adult":  {"T1": 1690, "T2star": 32.2, "PD": 0.81},
+    "csf":               {"T1": 4470, "T2star": 200, "PD": 1.0},
 }
 
-# Protocol parameters from Dokumacı et al., Quantitative T1 and Effective
-# Proton Density
 PROTOCOLS = {
-    'protocol_1': {
-        'TR_MP2RAGE': 10000,    # (ms) - Total repetition time
-        'TI1': 650,            # (ms) - First inversion time
-        'TI2': 9000,           # (ms) - Second inversion time
-        'alpha1': 5,           # (degrees) - First flip angle
-        'alpha2': 1,           # (degrees) - Second flip angle
-        'TE': 3.0,             # (ms) - Echo time (estimated)
-        'partitions': 1,       # Number of slices in 3D volume
-        'GRAPPA_factor': 1,    # Parallel imaging acceleration factor
-        'TR_GRE': 7.0,         # (ms) - Time between excitations (estimated)
-        'n': 1                 # Calculated: partitions / GRAPPA_factor = 1/1
+    "protocol_1": {
+        "TR_MP2RAGE": 4000,     # ms
+        "TI1": 650,             # ms (centre of GRE1)
+        "TI2": 2220,            # ms (centre of GRE2)
+        "alpha1": 5,            # degrees
+        "alpha2": 4,            # degrees
+        "TR_GRE": 7.0,          # ms
+        "TE": 3.0,              # ms
+        "eff": 1.0,             # inversion efficiency
+
+        # NOTE:
+        # n must be the number of excitations per GRE block.
+        # A common first approximation for two readouts is partitions/2.
+        "partitions": 320,
+        "GRAPPA_factor": 1,
+        "n": int(320 / (2 * 1)),  # 160
     }
 }
