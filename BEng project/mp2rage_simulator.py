@@ -100,3 +100,75 @@ class MP2RAGESimulator:
         )
 
         return INV1, INV2
+
+    def mz_timecourse(self, T1: float, PD: float, dt_ms: float = 2.0):
+        """
+        Simulate longitudinal magnetization Mz(t) over ONE MP2RAGE cycle..
+        Returns:
+            t_ms (np.array), mz (np.array),
+            gre1_window=(start_ms,end_ms), gre2_window=(start_ms,end_ms)
+        """
+        if not self.timing_is_valid():
+            raise ValueError(
+                f"Invalid timing: TA={self.TA:.1f}, TB={self.TB:.1f}, TC={self.TC:.1f}"
+            )
+
+        alpha1 = self.deg2rad(self.alpha1)
+        alpha2 = self.deg2rad(self.alpha2)
+
+        # Use existing steady-state computation (Eq. 1)
+        m_zss, *_ = self.longitudinal_mag(T1, PD)
+
+        # Immediately after inversion: Mz(0+) = -eff * Mz_ss
+        t = 0.0
+        mz = -self.eff * m_zss
+
+        t_list = [t]
+        mz_list = [mz]
+
+        def relax(duration_ms: float):
+            """Continuous relaxation with small time steps for smooth curve."""
+            nonlocal t, mz
+            if duration_ms <= 0:
+                return
+            nsteps = int(np.ceil(duration_ms / dt_ms))
+            for k in range(nsteps):
+                step = min(dt_ms, duration_ms - k * dt_ms)
+                e = np.exp(-step / T1)
+                mz = mz * e + PD * (1 - e)
+                t += step
+                t_list.append(t)
+                mz_list.append(mz)
+
+        def gre_block(alpha_rad: float):
+            """Discrete GRE excitations: Mz -> Mz*cos(alpha), then relax TR_GRE; repeat n times."""
+            nonlocal t, mz
+            for _ in range(self.n):
+                # Instant RF pulse
+                mz = mz * np.cos(alpha_rad)
+                t_list.append(t)
+                mz_list.append(mz)
+
+                # Relax during TR_GRE
+                e = np.exp(-self.TR_GRE / T1)
+                mz = mz * e + PD * (1 - e)
+                t += self.TR_GRE
+                t_list.append(t)
+                mz_list.append(mz)
+
+        # Timeline: TA -> GRE1 -> TB -> GRE2 -> TC
+        relax(self.TA)
+        gre1_start = t
+        gre_block(alpha1)
+        gre1_end = t
+
+        relax(self.TB)
+        gre2_start = t
+        gre_block(alpha2)
+        gre2_end = t
+
+        relax(self.TC)
+
+        return (np.array(t_list), np.array(mz_list),
+                (gre1_start, gre1_end), (gre2_start, gre2_end))
+

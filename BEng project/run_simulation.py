@@ -6,7 +6,7 @@ from mp2rage_simulator import MP2RAGESimulator
 
 
 def main():
-    colors = {"White Matter": "k", "Grey Matter": "r", "CSF": "b"}
+    colors = {"White Matter": "b", "Grey Matter": "k", "CSF": "r"}
 
     tissues = {
         "White Matter": TISSUE_PARAMS["white_matter_adult"],
@@ -33,7 +33,7 @@ def main():
     for i in range(n_iters):
         protocol = base_protocol.copy()
         protocol["TI1"] = base_TI1 + i * step_TI1
-        protocol["TI2"] = protocol["TI1"] + gap  # <-- THE KEY OPTION A CHANGE
+        protocol["TI2"] = 2220  # <-- THE KEY OPTION A CHANGE
 
         sim = MP2RAGESimulator(protocol, verbose=False)
 
@@ -81,6 +81,33 @@ def main():
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
+    # ------------------------------
+    # ADD-ON FIGURE: Mz(t) recovery curve over full TR_MP2RAGE
+    # ------------------------------
+    sim_for_timecourse = MP2RAGESimulator(base_protocol, verbose=False)
+
+    plt.figure(figsize=(10, 5))
+
+    gre1 = gre2 = None
+    for name, params in tissues.items():
+        t_ms, mz, gre1, gre2 = sim_for_timecourse.mz_timecourse(
+            T1=params["T1"],
+            PD=params["PD"],
+            dt_ms=2.0
+        )
+        plt.plot(t_ms, mz, linewidth=2, color=colors[name], label=f"{name} Mz(t)")
+
+    # Shade GRE blocks
+    plt.axvspan(gre1[0], gre1[1], alpha=0.15)
+    plt.axvspan(gre2[0], gre2[1], alpha=0.15)
+
+    plt.title("MP2RAGE Longitudinal Recovery Mz(t) over full TR (GRE blocks shaded)")
+    plt.xlabel("Time (ms)")
+    plt.ylabel("Mz (a.u.)")
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+
     plt.show()
 
 
