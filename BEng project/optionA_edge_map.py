@@ -2,6 +2,8 @@ import numpy as np
 import scipy.io as sio
 import matplotlib.pyplot as plt
 from scipy.ndimage import binary_dilation  # quick way to get a "boundary band" from WM/GM masks
+from edge_filters import sobel_mag, clean_binary_edge
+
 
 # import simulator + protocol
 from mp2rage_simulator import MP2RAGESimulator
@@ -93,6 +95,16 @@ def main():
     EdgeA = 1.0 - absINV1_n  # bright where abs INV1 is small
     EdgeA[~valid] = 0.0  # hide outside GM/WM
 
+    # Spatial edge map from INV1 (optional post-processing for Option A)
+    grad = sobel_mag(np.abs(INV1), mask=valid)
+    p = np.percentile(grad[valid], 99)
+    grad_s = np.clip(grad / (p + 1e-12), 0, 1)  # scaled gradient
+    score = EdgeA * grad_s
+    score_thresh = 0.35  # start higher since grad_s is more stable
+
+    edgeA_spatial = clean_binary_edge(score >= score_thresh, k=3)
+    edgeA_spatial[~valid] = 0
+
     # Plot
     plt.figure(figsize=(14, 5))
 
@@ -117,6 +129,11 @@ def main():
 
 
     plt.tight_layout()
+    plt.figure(figsize=(6, 6))
+    plt.imshow(edgeA_spatial.astype(float), cmap="gray")
+    plt.contour(boundary.astype(float), levels=[0.5], linewidths=0.6)
+    plt.title(f"Option A + spatial filter (thresh={score_thresh:.2f})")
+    plt.axis("off")
     plt.show()
 
     # Quick checks: boundary should have lower INV1 than pure WM/GM interiors
@@ -130,6 +147,7 @@ def main():
     print(f"  |INV1| (GM):                     {pct(absINV1[gm & valid])}")
     print(f"  |INV1| (boundary band):          {pct(absINV1[boundary & valid])}")
     print(f"  PD scale used (99th percentile): {PD_scale:.3f}")
+
 
 
 if __name__ == "__main__":

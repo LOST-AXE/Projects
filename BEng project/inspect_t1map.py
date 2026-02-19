@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+
 mat = sio.loadmat("C:/Users/jiges/Downloads/Example_T1_data/Example_T1_data/Child01_lsq_fit_16022024_x0_20000_1500.mat")
 
 # List keys
