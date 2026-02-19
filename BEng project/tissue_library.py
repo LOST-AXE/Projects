@@ -3,9 +3,6 @@ Tissue parameter library + baseline MP2RAGE protocol for 7T simulations.
 
 n is set as excitations per GRE block (not total partitions).
 """
-from turtledemo.sorting_animate import partition
-
-from jedi.inference.gradual.typing import Protocol
 
 TISSUE_PARAMS = {
     "white_matter_adult": {"T1": 1092, "T2star": 28, "PD": 0.69},
@@ -25,7 +22,7 @@ PROTOCOLS = {
         "eff": 1.0,             # inversion efficiency
         "partitions": 320,
         "GRAPPA_factor": 1,
-        "n": None
+        "n": Non
     }
 }
 p = PROTOCOLS["protocol_1"]
