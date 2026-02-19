@@ -22,7 +22,7 @@ def inversion_recovery_signal(T1, PD, TI, TR):
     TI (float): Inversion time in ms
     TR (float): Repetition time in ms
 
-    Returns:
+    Return:
     float: Magnetization Mz(TI)
     """
     M0 = PD  # Equilibrium magnetization proportional to PD
