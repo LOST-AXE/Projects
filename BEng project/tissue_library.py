@@ -22,7 +22,7 @@ PROTOCOLS = {
         "eff": 1.0,             # inversion efficiency
         "partitions": 320,
         "GRAPPA_factor": 1,
-        "n": Non
+        "n": None
     }
 }
 p = PROTOCOLS["protocol_1"]
