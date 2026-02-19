@@ -28,7 +28,7 @@ if "T1_soln" in mat:
 
     if T1.ndim == 3:
         mid = T1.shape[2] // 2
-        plt.imshow(T1[:, :, mid], cmap="gray")
+        plt.imshow(T1[mid, :, :], cmap="gray")
         plt.title("Middle slice of T1_soln")
         plt.colorbar(label="T1 (ms)")
         plt.show()

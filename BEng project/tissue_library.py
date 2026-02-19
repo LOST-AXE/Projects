@@ -17,7 +17,7 @@ PROTOCOLS = {
         "TI2": 2220,            # ms (centre of GRE2)
         "alpha1": 5,            # degrees
         "alpha2": 7,            # degrees
-        "TR_GRE": 7.0,          # ms
+        "TR_GRE": 7,          # ms
         "TE": 3.0,              # ms
         "eff": 1.0,             # inversion efficiency
         "partitions": 320,
