@@ -238,7 +238,7 @@ def main():
     wm2_first = wm2_zero[0] if len(wm2_zero) > 0 else None
     gm2_first = gm2_zero[0] if len(gm2_zero) > 0 else None
 
-    return wm_zero[0], gm_zero[0], wm2_first, gm2_first
+    return wm_zero[0], gm_zero[0], wm2_first, gm2_first, ti1_star
 
 if __name__ == "__main__":
     main()
