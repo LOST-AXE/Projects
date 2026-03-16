@@ -26,7 +26,7 @@ from mp2rage_simulator import MP2RAGESimulator
 from tissue_library import PROTOCOLS
 from run_simulation import main as get_null_times
 from edge_filters import sobel_mag, clean_binary_edge
-from utils import (get_subject_id, get_valid_mask, get_boundary_masks,
+from Utils import (get_subject_id, get_valid_mask, get_boundary_masks,
                    robust_norm, print_edge_metrics, save_figure)
 
 # Dataset path:
@@ -46,8 +46,7 @@ def main(mat_path: str = MAT_PATH):
     # TI1* is where WM + GM INV1 = 0 (equal and opposite).
     # Close the run_simulation plots to continue.
     print("Getting TI1* from run_simulation...")
-    TI_WM, _ = get_null_times()
-    TI1_star  = TI_WM   # Option A uses the WM null as TI1
+    TI_WM, _, _, _, TI1_star = get_null_times()
     print(f"TI1* = {TI1_star:.1f} ms")
 
     # Load data
