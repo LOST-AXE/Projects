@@ -1,153 +1,147 @@
+"""
+Option A: physics-based edge map using INV1 signal cancellation.
+
+Method:
+At TI1* (where WM and GM INV1 signals are equal and opposite),
+boundary voxels with mixed tissue composition produce a small |INV1|.
+
+Edge term:
+    EdgeA = 1 - |INV1_normalised|
+
+Combined with a Sobel spatial gradient:
+    score = EdgeA * grad
+    threshold(score) -> binary edge
+
+This was the original approach before the dual-null and notch methods.
+It is kept as a baseline comparator.
+"""
+
+import os
 import numpy as np
 import scipy.io as sio
 import matplotlib.pyplot as plt
-from scipy.ndimage import binary_dilation  # quick way to get a "boundary band" from WM/GM masks
-from edge_filters import sobel_mag, clean_binary_edge
+from scipy.ndimage import binary_dilation
 
-
-# import simulator + protocol
 from mp2rage_simulator import MP2RAGESimulator
 from tissue_library import PROTOCOLS
+from run_simulation import main as get_null_times
+from edge_filters import sobel_mag, clean_binary_edge
+from utils import (get_subject_id, get_valid_mask, get_boundary_masks,
+                   robust_norm, print_edge_metrics, save_figure)
+
+# Dataset path:
+MAT_PATH = (
+    "C:/Users/jiges/Downloads/Example_T1_data/Example_T1_data/"
+    "Child01_lsq_fit_16022024_x0_20000_1500.mat"
+)
+SCORE_THRESH = 0.35
 
 
-def robust_norm(img, mask, lo=1, hi=99):
-    """Robust normalize to [0,1] based on percentiles inside mask."""
-    vals = img[mask]
-    if vals.size == 0:
-        return np.zeros_like(img)
-    vmin = np.percentile(vals, lo)
-    vmax = np.percentile(vals, hi)
-    if vmax <= vmin:
-        return np.zeros_like(img)
-    out = (img - vmin) / (vmax - vmin)
-    return np.clip(out, 0, 1)
+def main(mat_path: str = MAT_PATH):
 
+    subject_id = get_subject_id(mat_path)
+    print(f"\nOption A edge map  |  subject: {subject_id}")
 
-def main():
-    # Load maps
-    mat = sio.loadmat(
-        "C:/Users/jiges/Downloads/Example_T1_data/Example_T1_data/Child01_lsq_fit_16022024_x0_20000_1500.mat"
-    )
+    # Get TI1* from run_simulation
+    # TI1* is where WM + GM INV1 = 0 (equal and opposite).
+    # Close the run_simulation plots to continue.
+    print("Getting TI1* from run_simulation...")
+    TI_WM, _ = get_null_times()
+    TI1_star  = TI_WM   # Option A uses the WM null as TI1
+    print(f"TI1* = {TI1_star:.1f} ms")
 
-    T1_3d = mat["T1_soln"].astype(np.float64)  # ms
-    PD_3d = mat["PD_soln"].astype(np.float64)  # arbitrary scale (often huge)
-
-    # Use tissue masks so we focus on GM/WM junction not CSF/background
+    # Load data
+    mat   = sio.loadmat(mat_path)
+    T1_3d = mat["T1_soln"].astype(np.float64)
+    PD_3d = mat["PD_soln"].astype(np.float64)
     wm_3d = mat["mask_wm"].astype(np.uint8)
     gm_3d = mat["mask_gm"].astype(np.uint8)
 
-    # pick slice
-    x = T1_3d.shape[2] // 2
-    T1 = T1_3d[x, :, :]
+    x  = T1_3d.shape[2] // 2
+    T1 = np.clip(T1_3d[x, :, :], 200.0, 30000.0)
     PD = PD_3d[x, :, :]
     wm = wm_3d[x, :, :] > 0
     gm = gm_3d[x, :, :] > 0
-    brain = wm | gm  # only WM+GM for this test
 
-    # Avoid T1=0 / causing math issues
-    T1 = np.clip(T1, 200.0, 30000.0)
-    valid = brain & np.isfinite(T1) & np.isfinite(PD)
+    valid = get_valid_mask(T1, PD)
 
-    # Normalize PD so it behaves like effective PD ~= [0, 1]
     PD_scale = np.percentile(PD[valid], 99) if np.any(valid) else np.max(PD)
-    PD_scale = max(PD_scale, 1e-6)
-    PDn = PD / PD_scale
-    PDn = np.clip(PDn, 0.0, 2.0)
+    PDn      = np.clip(PD / max(PD_scale, 1e-6), 0.0, 2.0)
 
-    # Set protocol at TI1* found in run_simulation.py
+    # Simulate INV1 at TI1*
     base = PROTOCOLS["protocol_1"].copy()
+    gap  = base["TI2"] - base["TI1"]
+    proto = base.copy()
+    proto["TI1"] = float(TI1_star)
+    proto["TI2"] = float(TI1_star + gap)
 
-    TI1_star = 983.8  # from sweep
-
-    # Keep the same gap (Option A: shift TI2 with TI1)
-    gap = base["TI2"] - base["TI1"]
-    base["TI1"] = float(TI1_star)
-    base["TI2"] = float(TI1_star + gap)
-
-    sim = MP2RAGESimulator(base, verbose=True)
+    sim = MP2RAGESimulator(proto, verbose=False)
     if not sim.timing_is_valid():
-        raise ValueError("Timing invalid with chosen TI1/TI2. Adjust TR/gap/n.")
+        raise ValueError(f"Timing invalid at TI1={TI1_star:.1f} ms")
 
-    # Compute INV1 voxel-wise (single slice)
     INV1 = np.zeros_like(T1, dtype=np.float32)
-    T2star_fixed = 30.0  # fine for now
-
     ys, zs = np.where(valid)
     for y, z in zip(ys, zs):
-        inv1, _inv2 = sim.calculate_signals(
-            T1=float(T1[y, z]),
-            PD=float(PDn[y, z]),
-            T2star=T2star_fixed,
-            B1minus=1.0,
-        )
+        inv1, _ = sim.calculate_signals(
+            T1=float(T1[y, z]), PD=float(PDn[y, z]),
+            T2star=30.0, B1minus=1.0)
         INV1[y, z] = float(inv1)
 
-    # Option A edge map: boundary voxels should have small abs INV1
-    absINV1 = np.abs(INV1)
+    # Edge term
+    absINV1   = np.abs(INV1)
+    absINV1_n = robust_norm(absINV1, valid)
+    EdgeA     = 1.0 - absINV1_n
+    EdgeA[~valid] = 0.0
 
-    # Build a 1-voxel "boundary band" between WM and GM
-    wm_d = binary_dilation(wm, iterations=2)
-    gm_d = binary_dilation(gm, iterations=2)
-    boundary = (wm_d & gm) | (gm_d & wm)
+    # Sobel spatial gradient on |INV1|
+    grad   = sobel_mag(absINV1, mask=valid)
+    grad_s = np.clip(grad / (np.percentile(grad[valid], 99) + 1e-12), 0, 1)
+    score  = EdgeA * grad_s
+    score[~valid] = 0.0
 
-    # Normalize only within GM+WM so the dynamic range isn't dominated by other tissues
-    absINV1_n = robust_norm(absINV1, valid, lo=1, hi=99)
-    EdgeA = 1.0 - absINV1_n  # bright where abs INV1 is small
-    EdgeA[~valid] = 0.0  # hide outside GM/WM
+    binary_edge = clean_binary_edge(score >= SCORE_THRESH, k=3)
+    binary_edge[~valid] = 0
 
-    # Spatial edge map from INV1 (optional post-processing for Option A)
-    grad = sobel_mag(np.abs(INV1), mask=valid)
-    p = np.percentile(grad[valid], 99)
-    grad_s = np.clip(grad / (p + 1e-12), 0, 1)  # scaled gradient
-    score = EdgeA * grad_s
-    score_thresh = 0.35  # start higher since grad_s is more stable
+    # Evaluation masks
+    boundary_valid, wm_interior, gm_interior = get_boundary_masks(wm, gm, valid)
 
-    edgeA_spatial = clean_binary_edge(score >= score_thresh, k=3)
-    edgeA_spatial[~valid] = 0
+    # Metrics
+    metrics = print_edge_metrics(
+        f"Option A  (TI1*={TI1_star:.0f} ms, thresh={SCORE_THRESH})",
+        score, boundary_valid, wm_interior, gm_interior)
 
-    # Plot
-    plt.figure(figsize=(14, 5))
+    # Figure
+    boundary = binary_dilation(wm, iterations=2) & gm | \
+               binary_dilation(gm, iterations=2) & wm
 
-    plt.subplot(1, 3, 1)
-    v = np.percentile(np.abs(INV1[valid]), 99) if np.any(valid) else 1.0
-    plt.imshow(INV1, cmap="seismic", vmin=-v, vmax=v)
-    plt.title("INV1 (signed) — GM/WM only")
-    plt.axis("off")
-    plt.colorbar(fraction=0.046, pad=0.04)
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig.suptitle(f"Option A — {subject_id}  |  TI1*={TI1_star:.0f} ms",
+                 fontsize=12, fontweight="bold")
 
-    plt.subplot(1, 3, 2)
-    plt.imshow(absINV1_n, cmap="gray")
-    plt.title("|INV1| (robust normalized) — GM/WM only")
-    plt.axis("off")
-    plt.colorbar(fraction=0.046, pad=0.04)
+    axes[0].imshow(absINV1_n, cmap="gray", vmin=0, vmax=1)
+    axes[0].contour(boundary.astype(float), levels=[0.5],
+                    colors="white", linewidths=0.5)
+    axes[0].set_title("|INV1| normalised")
+    axes[0].axis("off")
 
-    plt.subplot(1, 3, 3)
-    plt.imshow(EdgeA, cmap="gray")
-    plt.contour(boundary.astype(float), levels=[0.5], linewidths=0.6)  # boundary overlay
-    plt.title("Edge_A = 1 - |INV1| (bright = boundary)")
-    plt.axis("off")
+    axes[1].imshow(EdgeA, cmap="gray", vmin=0, vmax=1)
+    axes[1].contour(boundary.astype(float), levels=[0.5],
+                    colors="white", linewidths=0.5)
+    axes[1].set_title("EdgeA = 1 - |INV1|")
+    axes[1].axis("off")
 
+    axes[2].imshow(score, cmap="gray", vmin=0, vmax=1)
+    axes[2].contour(boundary.astype(float), levels=[0.5],
+                    colors="white", linewidths=0.5)
+    axes[2].set_title(f"Score = EdgeA × Sobel\n"
+                      f"Boundary/WM = {metrics['ratio']:.2f}x")
+    axes[2].axis("off")
 
     plt.tight_layout()
-    plt.figure(figsize=(6, 6))
-    plt.imshow(edgeA_spatial.astype(float), cmap="gray")
-    plt.contour(boundary.astype(float), levels=[0.5], linewidths=0.6)
-    plt.title(f"Option A + spatial filter (thresh={score_thresh:.2f})")
-    plt.axis("off")
+    save_figure(fig, mat_path, "optionA")
     plt.show()
 
-    # Quick checks: boundary should have lower INV1 than pure WM/GM interiors
-    def pct(z):
-        return np.percentile(z, [5, 50, 95]) if z.size else np.array([np.nan, np.nan, np.nan])
-
-    print("\nSanity checks (slice, GM/WM only):")
-    print(f"  INV1 signed percentiles (valid): {np.percentile(INV1[valid], [1, 50, 99])}")
-    print(f"  |INV1| percentiles (valid):      {np.percentile(absINV1[valid], [1, 50, 99])}")
-    print(f"  |INV1| (WM):                     {pct(absINV1[wm & valid])}")
-    print(f"  |INV1| (GM):                     {pct(absINV1[gm & valid])}")
-    print(f"  |INV1| (boundary band):          {pct(absINV1[boundary & valid])}")
-    print(f"  PD scale used (99th percentile): {PD_scale:.3f}")
-
+    return score, metrics
 
 
 if __name__ == "__main__":
