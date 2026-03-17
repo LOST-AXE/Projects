@@ -25,7 +25,7 @@ from scipy.ndimage import binary_dilation
 from mp2rage_simulator import MP2RAGESimulator
 from tissue_library import PROTOCOLS
 from run_simulation import main as get_null_times
-from edge_filters import sobel_mag, clean_binary_edge
+from edge_filters import sobel_mag
 from Utils import (get_subject_id, get_valid_mask, get_boundary_masks,
                    robust_norm, print_edge_metrics, save_figure)
 
@@ -34,8 +34,6 @@ MAT_PATH = (
     "C:/Users/jiges/Downloads/Example_T1_data/Example_T1_data/"
     "Child01_lsq_fit_16022024_x0_20000_1500.mat"
 )
-SCORE_THRESH = 0.35
-
 
 def main(mat_path: str = MAT_PATH):
 
@@ -98,15 +96,14 @@ def main(mat_path: str = MAT_PATH):
     score  = EdgeA * grad_s
     score[~valid] = 0.0
 
-    binary_edge = clean_binary_edge(score >= SCORE_THRESH, k=3)
-    binary_edge[~valid] = 0
+
 
     # Evaluation masks
     boundary_valid, wm_interior, gm_interior = get_boundary_masks(wm, gm, valid)
 
     # Metrics
     metrics = print_edge_metrics(
-        f"Option A  (TI1*={TI1_star:.0f} ms, thresh={SCORE_THRESH})",
+        f"Option A  (TI1*={TI1_star:.0f} ms)",
         score, boundary_valid, wm_interior, gm_interior)
 
     # Figure
