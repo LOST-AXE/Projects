@@ -137,8 +137,8 @@ def main(mat_path: str = MAT_PATH):
             ax.imshow(img, cmap="gray", vmin=-v, vmax=v)
         else:
             ax.imshow(img, cmap="gray", vmin=0, vmax=1)
-        ax.contour(boundary.astype(float), levels=[0.5],
-                   colors="white", linewidths=0.5)
+        #ax.contour(boundary.astype(float), levels=[0.5],
+                   #colors="white", linewidths=0.5)
         ax.set_title(title, fontsize=9)
         ax.axis("off")
 

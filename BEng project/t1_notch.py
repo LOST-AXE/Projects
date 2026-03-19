@@ -115,8 +115,8 @@ def main(mat_path: str = MAT_PATH):
 
     # T1 map reference
     im = axes[0].imshow(T1, cmap="gray", vmin=400, vmax=2500)
-    axes[0].contour(boundary.astype(float), levels=[0.5],
-                    colors="white", linewidths=0.5)
+    #axes[0].contour(boundary.astype(float), levels=[0.5],
+                    #colors="white", linewidths=0.5)
     axes[0].set_title("T1 map (reference)")
     axes[0].axis("off")
     plt.colorbar(im, ax=axes[0], fraction=0.046, pad=0.04, label="T1 (ms)")
@@ -126,8 +126,8 @@ def main(mat_path: str = MAT_PATH):
         ratio = metrics[sigma]["ratio"]
         star  = " best" if sigma == best_sigma else ""
         ax.imshow(W, cmap="gray", vmin=0, vmax=1)
-        ax.contour(boundary.astype(float), levels=[0.5],
-                   colors="white", linewidths=0.5)
+        #ax.contour(boundary.astype(float), levels=[0.5],
+                   #colors="white", linewidths=0.5)
         ax.set_title(f"sigma={sigma} ms{star}\nBoundary/WM = {ratio:.2f}x",
                      fontsize=9)
         ax.axis("off")
@@ -137,7 +137,7 @@ def main(mat_path: str = MAT_PATH):
     plt.show()
 
     # Return best result
-    return results[best_sigma], metrics[best_sigma], best_sigma
+    return results, metrics, best_sigma
 
 
 if __name__ == "__main__":

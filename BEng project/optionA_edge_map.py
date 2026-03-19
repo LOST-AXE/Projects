@@ -115,20 +115,20 @@ def main(mat_path: str = MAT_PATH):
                  fontsize=12, fontweight="bold")
 
     axes[0].imshow(absINV1_n, cmap="gray", vmin=0, vmax=1)
-    axes[0].contour(boundary.astype(float), levels=[0.5],
-                    colors="white", linewidths=0.5)
+    #axes[0].contour(boundary.astype(float), levels=[0.5],
+                    #colors="white", linewidths=0.5)
     axes[0].set_title("|INV1| normalised")
     axes[0].axis("off")
 
     axes[1].imshow(EdgeA, cmap="gray", vmin=0, vmax=1)
-    axes[1].contour(boundary.astype(float), levels=[0.5],
-                    colors="white", linewidths=0.5)
+    #axes[1].contour(boundary.astype(float), levels=[0.5],
+                    #colors="white", linewidths=0.5)
     axes[1].set_title("EdgeA = 1 - |INV1|")
     axes[1].axis("off")
 
     axes[2].imshow(score, cmap="gray", vmin=0, vmax=1)
-    axes[2].contour(boundary.astype(float), levels=[0.5],
-                    colors="white", linewidths=0.5)
+    #axes[2].contour(boundary.astype(float), levels=[0.5],
+                    #colors="white", linewidths=0.5)
     axes[2].set_title(f"Score = EdgeA × Sobel\n"
                       f"Boundary/WM = {metrics['ratio']:.2f}x")
     axes[2].axis("off")
