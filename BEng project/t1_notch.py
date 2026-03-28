@@ -81,7 +81,9 @@ def main(mat_path: str = MAT_PATH):
     valid = get_valid_mask(T1)
 
     # Evaluation masks
-    boundary_valid, wm_interior, gm_interior = get_boundary_masks(wm, gm, valid)
+    boundary_valid, wm_interior, gm_interior = get_boundary_masks(wm, gm,
+                                                                  valid,
+                                                                  mat_path)
 
     # Run all sigmas
     results  = {}

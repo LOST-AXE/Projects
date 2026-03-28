@@ -37,19 +37,82 @@ def get_valid_mask(T1_slice: np.ndarray, PD_slice: np.ndarray = None,
 
 
 def get_boundary_masks(wm: np.ndarray, gm: np.ndarray,
-                       valid: np.ndarray) -> tuple:
+                       valid: np.ndarray,
+                       mat_path: str = None) -> tuple:
     """
-    Build boundary, WM, GM masks.
-    wm / gm are boolean 2D arrays (used for evaluation only).
-    Returns (boundary_valid, wm_interior, gm_interior).
-    """
-    wm_d = binary_dilation(wm, iterations=2)
-    gm_d = binary_dilation(gm, iterations=2)
-    boundary = (wm_d & gm) | (gm_d & wm)
-    return (boundary & valid,
-            wm & valid & ~boundary,
-            gm & valid & ~boundary)
+    Build boundary, WM interior, and GM interior masks.
 
+    If mat_path is provided and SPM25 probability maps exist alongside
+    the .mat file, uses probability-based boundary definition.
+    Otherwise falls back to gap-based boundary from binary masks.
+
+    Parameters:
+    wm: binary WM mask (from mask_wm in .mat file)
+    gm: binary GM mask (from mask_gm in .mat file)
+    valid: valid brain voxel mask (from get_valid_mask)
+    mat_path: path to .mat file — used to locate SPM probability maps
+
+    Outpiut:
+    boundary_valid: boundary voxels within valid mask
+    wm_interior: pure WM voxels within valid mask
+    gm_interior: pure GM voxels within valid mask
+    """
+
+    # Try SPM probability maps first
+    if mat_path is not None:
+        subject_id = get_subject_id(mat_path)
+        data_dir = os.path.dirname(mat_path)
+        gm_path = os.path.join(data_dir, f"c1{subject_id}_T1map.nii")
+        wm_path = os.path.join(data_dir, f"c2{subject_id}_T1map.nii")
+
+        if os.path.exists(gm_path) and os.path.exists(wm_path):
+            try:
+                import nibabel as nib
+
+                gm_prob_3d = nib.load(gm_path).get_fdata().astype(np.float32)
+                wm_prob_3d = nib.load(wm_path).get_fdata().astype(np.float32)
+
+                # Extract middle slice (same slice as all other processing)
+                x = gm_prob_3d.shape[2] // 2
+                gm_prob = gm_prob_3d[x, :, :]
+                wm_prob = wm_prob_3d[x, :, :]
+
+                # Strict thresholds 0.9 ensures only confidently
+                # pure tissue voxels are used as interior references.
+                # A 50/50 mixed voxel has prob ~0.5 for both tissues
+                # and would incorrectly pass a 0.5 threshold.
+                wm_interior = (wm_prob > 0.9) & valid
+                gm_interior = (gm_prob > 0.9) & valid
+
+                # Boundary: meaningful probability of both tissues
+                # but not confidently assigned to either
+                boundary = valid & ~wm_interior & ~gm_interior
+
+                print(f"  [utils] SPM boundary: {boundary.sum()} voxels  "
+                      f"| WM: {wm_interior.sum()}  | GM: {gm_interior.sum()}")
+
+                return boundary, wm_interior, gm_interior
+
+            except Exception as e:
+                print(f"  [utils] SPM maps found but failed to load: {e}")
+                print(f"  [utils] Falling back to gap-based boundary.")
+
+        else:
+            print(f"  [utils] SPM maps not found at:")
+            print(f"          {gm_path}")
+            print(f"  [utils] Falling back to gap-based boundary.")
+
+    # Backup: gap-based boundary from binary masks
+    # The binary masks were thresholded at 0.99 in Silas's pipeline.
+    # Voxels excluded from both masks are partial volume boundary voxels.
+    boundary = valid & ~wm & ~gm
+
+    print(f"  [utils] Gap boundary: {(boundary & valid).sum()} voxels  "
+          f"| WM: {(wm & valid).sum()}  | GM: {(gm & valid).sum()}")
+
+    return (boundary & valid,
+            wm & valid,
+            gm & valid)
 
 def robust_norm(img: np.ndarray, mask: np.ndarray,
                 lo: float = 1, hi: float = 99) -> np.ndarray:

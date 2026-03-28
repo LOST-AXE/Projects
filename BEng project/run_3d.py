@@ -68,7 +68,7 @@ def _optionA_slice(T1, PDn, valid, base, TI1_star):
     grad    = sobel_mag(absINV1, mask=valid)
     grad_s  = np.clip(grad / (np.percentile(grad[valid], 99) + 1e-12), 0, 1) \
               if np.any(valid) else grad
-    score   = EdgeA * grad_s
+    score   =  robust_norm(absINV1, valid) # EdgeA * grad_s
     score[~valid] = 0.0
     return score
 

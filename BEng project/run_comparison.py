@@ -83,7 +83,9 @@ def main(mat_path: str = MAT_PATH):
     gm   = mat["mask_gm"].astype(np.uint8)[x, :, :] > 0
 
     valid = get_valid_mask(T1)
-    boundary_valid, wm_interior, gm_interior = get_boundary_masks(wm, gm, valid)
+    boundary_valid, wm_interior, gm_interior = get_boundary_masks(wm, gm,
+                                                                  valid,
+                                                                  mat_path)
     eval_mask, y_true = build_y_true(boundary_valid, wm_interior, gm_interior)
 
     n_pos = int(y_true.sum())

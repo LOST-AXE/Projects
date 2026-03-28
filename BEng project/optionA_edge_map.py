@@ -93,13 +93,15 @@ def main(mat_path: str = MAT_PATH):
     # Sobel spatial gradient on |INV1|
     grad   = sobel_mag(absINV1, mask=valid)
     grad_s = np.clip(grad / (np.percentile(grad[valid], 99) + 1e-12), 0, 1)
-    score  = EdgeA * grad_s
+    score  = robust_norm(absINV1, valid)        # EdgeA * grad_s
     score[~valid] = 0.0
 
 
 
     # Evaluation masks
-    boundary_valid, wm_interior, gm_interior = get_boundary_masks(wm, gm, valid)
+    boundary_valid, wm_interior, gm_interior = get_boundary_masks(wm, gm,
+                                                                  valid,
+                                                                  mat_path)
 
     # Metrics
     metrics = print_edge_metrics(

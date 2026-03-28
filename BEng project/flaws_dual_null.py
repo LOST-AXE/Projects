@@ -112,7 +112,9 @@ def main(mat_path: str = MAT_PATH):
     E2[~valid] = 0.0
 
     # Evaluation masks
-    boundary_valid, wm_interior, gm_interior = get_boundary_masks(wm, gm, valid)
+    boundary_valid, wm_interior, gm_interior = get_boundary_masks(wm, gm,
+                                                                  valid,
+                                                                  mat_path)
 
     # Metrics
     m1 = print_edge_metrics("Method 1 — raw min(|A|,|B|)",

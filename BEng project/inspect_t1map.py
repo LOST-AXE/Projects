@@ -1,6 +1,4 @@
 """
-inspect_t1map.py
-----------------
 Inspect the T1/PD maps and estimate representative WM and GM tissue T1 values
 from the T1 histogram
 
@@ -194,6 +192,8 @@ def main():
 
     print("Code ran succesfully")
 
+    print("mask_wm range:", mat["mask_wm"].min(), "to", mat["mask_wm"].max())
+    print("mask_gm range:", mat["mask_gm"].min(), "to", mat["mask_gm"].max())
     return tissue_T1s
 
 
