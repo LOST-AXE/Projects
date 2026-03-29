@@ -29,7 +29,7 @@ def main(mat_path=MAT_PATH):
     mat = sio.loadmat(mat_path)
     # Use t1_stack instead of T1_soln
     t1_raw = mat["t1_stack"].astype(np.float32)
-    voxel_size = 0.7
+    voxel_size = 0.6
     affine = np.diag([voxel_size, voxel_size, voxel_size, 1.0])
     img = nib.Nifti1Image(t1_raw, affine=affine)
     out_path = os.path.join(os.path.dirname(mat_path),

@@ -14,7 +14,6 @@ load_slice:          load middle axial slice from 3D .mat arrays
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.ndimage import binary_dilation
 
 
 def get_subject_id(mat_path: str) -> str:
@@ -57,9 +56,21 @@ def get_boundary_masks(wm: np.ndarray, gm: np.ndarray,
     wm_interior: pure WM voxels within valid mask
     gm_interior: pure GM voxels within valid mask
     """
+    # gap-based boundary from binary masks
+    # The binary masks were thresholded at 0.99 in Silas's pipeline.
+    # Voxels excluded from both masks are partial volume boundary voxels.
 
-    # Try SPM probability maps first
-    if mat_path is not None:
+    boundary = valid & ~wm & ~gm
+    if boundary.sum() > 0 and (wm.sum() > 0 or gm.sum() > 0):
+        # masks exist and gap is meaningful
+        print(f"  [utils] Gap boundary: {boundary.sum()} voxels")
+        return boundary, wm & valid, gm & valid
+    # otherwise fall through to SPM
+    else:
+    #if 1 == 1:
+        if mat_path is None:
+            raise RuntimeError(
+                "No boundary masks and no mat_path provided for SPM fallback.")
         subject_id = get_subject_id(mat_path)
         data_dir = os.path.dirname(mat_path)
         gm_path = os.path.join(data_dir, f"c1{subject_id}_T1map.nii")
@@ -94,25 +105,13 @@ def get_boundary_masks(wm: np.ndarray, gm: np.ndarray,
                 return boundary, wm_interior, gm_interior
 
             except Exception as e:
-                print(f"  [utils] SPM maps found but failed to load: {e}")
-                print(f"  [utils] Falling back to gap-based boundary.")
+                raise RuntimeError(
+                     f" [utils] SPM maps found but failed to load: {e}")
 
         else:
-            print(f"  [utils] SPM maps not found at:")
-            print(f"          {gm_path}")
-            print(f"  [utils] Falling back to gap-based boundary.")
-
-    # Backup: gap-based boundary from binary masks
-    # The binary masks were thresholded at 0.99 in Silas's pipeline.
-    # Voxels excluded from both masks are partial volume boundary voxels.
-    boundary = valid & ~wm & ~gm
-
-    print(f"  [utils] Gap boundary: {(boundary & valid).sum()} voxels  "
-          f"| WM: {(wm & valid).sum()}  | GM: {(gm & valid).sum()}")
-
-    return (boundary & valid,
-            wm & valid,
-            gm & valid)
+            raise RuntimeError(
+                f"No valid boundary masks found and SPM maps not found at {gm_path}. "
+                f"Run save_t1map.py then run_spm_segment.m first.")
 
 def robust_norm(img: np.ndarray, mask: np.ndarray,
                 lo: float = 1, hi: float = 99) -> np.ndarray:

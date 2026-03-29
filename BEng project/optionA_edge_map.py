@@ -51,14 +51,17 @@ def main(mat_path: str = MAT_PATH):
     mat   = sio.loadmat(mat_path)
     T1_3d = mat["T1_soln"].astype(np.float64)
     PD_3d = mat["PD_soln"].astype(np.float64)
-    wm_3d = mat["mask_wm"].astype(np.uint8)
-    gm_3d = mat["mask_gm"].astype(np.uint8)
-
     x  = T1_3d.shape[2] // 2
     T1 = np.clip(T1_3d[x, :, :], 200.0, 30000.0)
     PD = PD_3d[x, :, :]
-    wm = wm_3d[x, :, :] > 0
-    gm = gm_3d[x, :, :] > 0
+
+    if "mask_wm" in mat and "mask_gm" in mat:
+        wm = mat["mask_wm"].astype(np.uint8)[x, :, :] > 0
+        gm = mat["mask_gm"].astype(np.uint8)[x, :, :] > 0
+    else:
+        wm = np.zeros(T1.shape, dtype=bool)
+        gm = np.zeros(T1.shape, dtype=bool)
+        print("  No WM/GM masks in file — will use SPM probability maps.")
 
     valid = get_valid_mask(T1, PD)
 
