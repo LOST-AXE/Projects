@@ -33,7 +33,7 @@ from Utils import (get_subject_id, get_valid_mask, get_boundary_masks,
 # Dataset path
 MAT_PATH = (
     "C:/Users/jiges/Downloads/Example_T1_data/Example_T1_data/"
-    "Child01_lsq_fit_16022024_x0_20000_1500.mat"
+    "Adult05_lsq_fit_16022024_x0_20000_1500.mat"
 )
 
 
@@ -158,6 +158,15 @@ def main(mat_path: str = MAT_PATH):
     plt.tight_layout()
     save_figure(fig, mat_path, "flaws_dual_null")
     plt.show()
+    # Diagnostic — check signals at null times
+    base_diag = PROTOCOLS["protocol_1"].copy()
+    base_diag["TI1"] = float(TI_GM)
+    base_diag["TI2"] = float(TI_GM + 1570)
+    sim_diag = MP2RAGESimulator(base_diag, verbose=False)
+    wm_sig = sim_diag.calculate_signals(1094.0, 1.0, 30.0, 1.0)[0]
+    gm_sig = sim_diag.calculate_signals(1770.0, 1.0, 30.0, 1.0)[0]
+    print(
+        f"At TI_GM={TI_GM:.1f}ms: WM signal={wm_sig:.4f}, GM signal={gm_sig:.4f}")
 
     # Return both methods
     return E1,m1, E2, m2

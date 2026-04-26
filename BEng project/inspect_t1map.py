@@ -117,8 +117,7 @@ def estimate_tissue_T1s(T1_map: np.ndarray,
 #  main
 def main():
     mat = sio.loadmat(
-        "C:/Users/jiges/Downloads/Example_T1_data/Example_T1_data/"
-        "Child01_lsq_fit_16022024_x0_20000_1500.mat"
+        "C:/Users/jiges/Downloads/T1_Fit_Results_RICE092_s1_256_BETmask_B1.mat"
     )
 
     # Print all variables
@@ -163,7 +162,7 @@ def main():
 
     im = axes[0].imshow(T1_slice, cmap="gray",
                         vmin=400, vmax=2500)
-    axes[0].set_title("T1 map — middle slice")
+    axes[0].set_title("T1 map")
     axes[0].axis("off")
     plt.colorbar(im, ax=axes[0], label="T1 (ms)", fraction=0.046, pad=0.04)
 
@@ -182,7 +181,7 @@ def main():
                     color=["blue", "darkgreen"], zorder=5, s=60)
     axes[1].set_xlabel("T1 (ms)")
     axes[1].set_ylabel("Voxel count")
-    axes[1].set_title("T1 histogram — WM and GM peaks\n(used for mask-free tissue calibration)")
+    axes[1].set_title("T1 histogram: WM and GM peaks\n(used for tissue calibration)")
     axes[1].legend()
     axes[1].grid(alpha=0.3)
     axes[1].set_xlim(100, 3000)

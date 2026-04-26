@@ -4,8 +4,8 @@ from tissue_library import TISSUE_PARAMS, PROTOCOLS
 
 # Select tissues
 tissues = {
-    "White Matter": TISSUE_PARAMS["white_matter_adult"],
-    "Grey Matter": TISSUE_PARAMS["grey_matter_adult"],
+    "White Matter": TISSUE_PARAMS["white_matter"],
+    "Grey Matter": TISSUE_PARAMS["grey_matter"],
     "CSF": TISSUE_PARAMS["csf"],
 }
 angle_degree = PROTOCOLS["protocol_1"]["alpha1"]

@@ -17,8 +17,7 @@ from nibabel.affines import voxel_sizes
 from Utils import get_subject_id
 
 MAT_PATH = (
-    "C:/Users/jiges/Downloads/Example_T1_data/Example_T1_data/"
-    "Child01_lsq_fit_16022024_x0_20000_1500.mat"
+    "C:/Users/jiges/Downloads/RICE092_fixed.mat"
 )
 
 
@@ -28,7 +27,14 @@ def main(mat_path=MAT_PATH):
 
     mat = sio.loadmat(mat_path)
     # Use t1_stack instead of T1_soln
-    t1_raw = mat["t1_stack"].astype(np.float32)
+    # Try t1_stack first, fall back to T1_soln
+    if "t1_stack" in mat:
+        t1_raw = mat["t1_stack"].astype(np.float32)
+    else:
+        # Use inverted T1 map as substitute
+        T1 = mat["T1_soln"].astype(np.float32)
+        T1_clipped = np.clip(T1, 400, 3000)
+        t1_raw = 3000 - T1_clipped  # invert so WM is bright
     voxel_size = 0.6
     affine = np.diag([voxel_size, voxel_size, voxel_size, 1.0])
     img = nib.Nifti1Image(t1_raw, affine=affine)

@@ -145,7 +145,7 @@ def main():
             label=f"{name} INV1"
         )
 
-    title = "MP2RAGE INV1 vs TI1 (7T) — Option A (TI2 shifts with TI1)"
+    title = "MP2RAGE INV1 vs TI1 (7T): EDGE-Like (TI2 shifts with TI1)"
     if skipped > 0:
         title += f"\n(skipped {skipped} invalid points due to timing limits)"
 
@@ -168,7 +168,7 @@ def main():
         plt.axvline(ti1_star, linestyle="--")
         print(
             f"\nEstimated TI1* where WM+GM=0 (linear interp): {ti1_star:.1f} ms")
-
+    plt.xlim(500, 1500)
     plt.tight_layout()
 
     # -----------------------------
@@ -186,7 +186,7 @@ def main():
             label=f"{name} INV2"
         )
 
-    title = "MP2RAGE INV2 vs TI1 (7T) — Option A (TI2 shifts with TI1)"
+    title = "MP2RAGE INV2 vs TI1 (7T): Option A (TI2 shifts with TI1)"
     if skipped > 0:
         title += f"\n(skipped {skipped} invalid points due to timing limits)"
 

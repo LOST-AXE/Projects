@@ -171,5 +171,3 @@ class MP2RAGESimulator:
 
         return (np.array(t_list), np.array(mz_list),
                 (gre1_start, gre1_end), (gre2_start, gre2_end))
-
-#

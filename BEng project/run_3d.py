@@ -26,8 +26,7 @@ from Utils import get_subject_id, get_valid_mask, robust_norm
 import nibabel as nib
 
 MAT_PATH = (
-    "C:/Users/jiges/Downloads/Example_T1_data/Example_T1_data/"
-    "Adult05_lsq_fit_16022024_x0_20000_1500"
+    "C:/Users/jiges/Downloads/RICE092_fixed.mat"
 )
 
 SIGMAS = [75, 100, 125, 150, 200]
@@ -158,8 +157,8 @@ def main(mat_path=MAT_PATH):
 
     for x in range(n_slices):
 
-        T1  = np.clip(T1_3d[:, :, x], 200.0, 30000.0)
-        PD  = PD_3d[:, :, x]
+        T1  = np.clip(T1_3d[x, :, :], 200.0, 30000.0)
+        PD  = PD_3d[x, :, :]
 
         valid    = get_valid_mask(T1, PD)
 
@@ -172,14 +171,14 @@ def main(mat_path=MAT_PATH):
         PDn      = np.clip(PD / PD_scale, 0.0, 2.0)
 
         # Option A
-        vol_A[:, :, x] = _optionA_slice(T1, PDn, valid, base, TI1_star)
+        vol_A[x, :, :] = _optionA_slice(T1, PDn, valid, base, TI1_star)
 
         # FLAWS E2
-        vol_F[:, :, x] = _flaws_E2_slice(T1, PDn, valid, base, TI_WM, TI_GM)
+        vol_F[x, :, :] = _flaws_E2_slice(T1, PDn, valid, base, TI_WM, TI_GM)
 
         # T1 notch :all sigmas
         for sigma in SIGMAS:
-            vol_N[sigma][:, :, x] = _notch_slice(T1, valid,
+            vol_N[sigma][x, :, :] = _notch_slice(T1, valid,
                                                    T1_WM_notch, T1_GM_notch,
                                                    sigma)
 

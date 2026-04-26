@@ -29,8 +29,8 @@ TISSUE_PARAMS_ADULT = {
 #  Source: inspect_t1map.py histogram peak detection on Child01 dataset
 # ─────────────────────────────────────────────────────────────
 TISSUE_PARAMS_PAEDIATRIC = {
-    "white_matter": {"T1": 1095, "T2star": 28,   "PD": 0.69},
-    "grey_matter":  {"T1": 1761, "T2star": 32.2, "PD": 0.81},
+    "white_matter": {"T1": 1048, "T2star": 28,   "PD": 0.69},
+    "grey_matter":  {"T1": 1605, "T2star": 32.2, "PD": 0.81},
     "csf":          {"T1": 4470, "T2star": 200,  "PD": 1.0},
 }
 

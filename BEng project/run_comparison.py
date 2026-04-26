@@ -33,8 +33,7 @@ from sklearn.metrics import precision_recall_curve, average_precision_score
 from Utils import get_subject_id, get_boundary_masks, get_valid_mask, save_figure
 
 MAT_PATH = (
-    "C:/Users/jiges/Downloads/Example_T1_data/Example_T1_data/"
-    "Child01_lsq_fit_16022024_x0_20000_1500.mat"
+    "C:/Users/jiges/Downloads/RICE092_fixed.mat"
 )
 
 SIGMAS = [75, 100, 125, 150, 200]
