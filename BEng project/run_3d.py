@@ -105,7 +105,15 @@ def _notch_slice(T1, valid, T1_WM, T1_GM, sigma):
 
 def _save_nifti(volume, output_path):
     """Save a 3D numpy array as NIfTI .nii.gz."""
-    img = nib.Nifti1Image(volume.astype(np.float32), affine=np.eye(4))
+    # Exact affine from RICE092 original NIfTI (from MATLAB niftiinfo)
+    # Transform.T transposed for nibabel convention
+    affine = np.array([
+        [-0.0194, -0.0352, 0.6488, -73.2005],
+        [-0.6426, 0.0967, -0.0140, 91.4711],
+        [-0.0958, -0.6418, -0.0377, 107.3020],
+        [0.0000, 0.0000, 0.0000, 1.0000]
+    ])
+    img = nib.Nifti1Image(volume, affine=affine)
     nib.save(img, output_path)
     print(f"  Saved → {output_path}")
 
@@ -136,7 +144,7 @@ def main(mat_path=MAT_PATH):
     mat    = sio.loadmat(mat_path)
     T1_3d  = mat["T1_soln"].astype(np.float64)
     PD_3d  = mat["PD_soln"].astype(np.float64)
-    n_slices = T1_3d.shape[2]
+    n_slices = T1_3d.shape[1]  # changed from shape[2]
     print(f"  Volume shape: {T1_3d.shape}  ({n_slices} slices)")
 
     # Notch tissue T1 targets
@@ -156,10 +164,8 @@ def main(mat_path=MAT_PATH):
     t_start = time.time()
 
     for x in range(n_slices):
-
-        T1  = np.clip(T1_3d[x, :, :], 200.0, 30000.0)
-        PD  = PD_3d[x, :, :]
-
+        T1 = np.clip(T1_3d[:, x, :], 200.0, 30000.0)  # changed
+        PD = PD_3d[:, x, :]  # changed
         valid    = get_valid_mask(T1, PD)
 
         # Skip empty slices (all background)
@@ -171,14 +177,14 @@ def main(mat_path=MAT_PATH):
         PDn      = np.clip(PD / PD_scale, 0.0, 2.0)
 
         # Option A
-        vol_A[x, :, :] = _optionA_slice(T1, PDn, valid, base, TI1_star)
+        vol_A[:, x, :] = _optionA_slice(T1, PDn, valid, base, TI1_star)
 
         # FLAWS E2
-        vol_F[x, :, :] = _flaws_E2_slice(T1, PDn, valid, base, TI_WM, TI_GM)
+        vol_F[:, x, :] = _flaws_E2_slice(T1, PDn, valid, base, TI_WM, TI_GM)
 
         # T1 notch :all sigmas
         for sigma in SIGMAS:
-            vol_N[sigma][x, :, :] = _notch_slice(T1, valid,
+            vol_N[sigma][:, x, :] = _notch_slice(T1, valid,
                                                    T1_WM_notch, T1_GM_notch,
                                                    sigma)
 

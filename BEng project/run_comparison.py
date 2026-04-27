@@ -76,11 +76,11 @@ def main(mat_path: str = MAT_PATH):
 
     # Ground truth
     mat  = sio.loadmat(mat_path)
-    x    = mat["T1_soln"].shape[2] // 2
+    x    = mat["T1_soln"].shape[1] // 2
     T1   = np.clip(mat["T1_soln"].astype(np.float64)[x, :, :], 200.0, 30000.0)
     if "mask_wm" in mat and "mask_gm" in mat:
-        wm = mat["mask_wm"].astype(np.uint8)[x, :, :] > 0
-        gm = mat["mask_gm"].astype(np.uint8)[x, :, :] > 0
+        wm = mat["mask_wm"].astype(np.uint8)[ :,x, :] > 0
+        gm = mat["mask_gm"].astype(np.uint8)[:, x, :] > 0
     else:
         wm = np.zeros(T1.shape, dtype=bool)
         gm = np.zeros(T1.shape, dtype=bool)

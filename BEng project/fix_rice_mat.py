@@ -2,7 +2,7 @@ import scipy.io as sio
 
 # Load the RICE mat file
 mat = sio.loadmat(
-    "C:/Users/jiges/Downloads/T1_Fit_Results_RICE092_s1_256_BETmask_B1.mat"
+    "C:/Users/jiges/Downloads/T1_Fit_Results_RICE092_s1_256_INV1autoMask_B1.mat"
 )
 
 # Print keys to see what's in there

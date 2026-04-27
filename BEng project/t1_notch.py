@@ -70,11 +70,11 @@ def main(mat_path: str = MAT_PATH):
     # Load data
     mat   = sio.loadmat(mat_path)
     T1_3d = mat["T1_soln"].astype(np.float64)
-    x  = T1_3d.shape[2] // 2
-    T1 = np.clip(T1_3d[x, :, :], 200.0, 30000.0)
+    x  = T1_3d.shape[1] // 2
+    T1 = np.clip(T1_3d[:, x, :], 200.0, 30000.0)
     if "mask_wm" in mat and "mask_gm" in mat:
-        wm = mat["mask_wm"].astype(np.uint8)[x, :, :] > 0
-        gm = mat["mask_gm"].astype(np.uint8)[x, :, :] > 0
+        wm = mat["mask_wm"].astype(np.uint8)[:, x, :] > 0
+        gm = mat["mask_gm"].astype(np.uint8)[:, x, :] > 0
     else:
         wm = np.zeros(T1.shape, dtype=bool)
         gm = np.zeros(T1.shape, dtype=bool)
