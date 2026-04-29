@@ -17,7 +17,7 @@ from nibabel.affines import voxel_sizes
 from Utils import get_subject_id
 
 MAT_PATH = (
-    "C:/Users/jiges/Downloads/RICE092_fixed.mat"
+    "C:/Users/jiges/Downloads/RICE092_final_fixed.mat"
 )
 
 

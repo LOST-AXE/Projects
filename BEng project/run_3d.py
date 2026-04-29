@@ -26,7 +26,7 @@ from Utils import get_subject_id, get_valid_mask, robust_norm
 import nibabel as nib
 
 MAT_PATH = (
-    "C:/Users/jiges/Downloads/RICE092_fixed.mat"
+    "C:/Users/jiges/Downloads/RICE096_final_fixed.mat"
 )
 
 SIGMAS = [75, 100, 125, 150, 200]

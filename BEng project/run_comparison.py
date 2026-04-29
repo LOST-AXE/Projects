@@ -33,7 +33,7 @@ from sklearn.metrics import precision_recall_curve, average_precision_score
 from Utils import get_subject_id, get_boundary_masks, get_valid_mask, save_figure
 
 MAT_PATH = (
-    "C:/Users/jiges/Downloads/RICE092_fixed.mat"
+    "C:/Users/jiges/Downloads/RICE096_final_fixed.mat"
 )
 
 SIGMAS = [75, 100, 125, 150, 200]
@@ -76,8 +76,8 @@ def main(mat_path: str = MAT_PATH):
 
     # Ground truth
     mat  = sio.loadmat(mat_path)
-    x    = mat["T1_soln"].shape[1] // 2
-    T1   = np.clip(mat["T1_soln"].astype(np.float64)[x, :, :], 200.0, 30000.0)
+    x    = mat["T1_soln"].shape[1] // 2 - 40
+    T1   = np.clip(mat["T1_soln"].astype(np.float64)[:, x, :], 200.0, 30000.0)
     if "mask_wm" in mat and "mask_gm" in mat:
         wm = mat["mask_wm"].astype(np.uint8)[ :,x, :] > 0
         gm = mat["mask_gm"].astype(np.uint8)[:, x, :] > 0

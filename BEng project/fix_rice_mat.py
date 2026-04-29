@@ -2,7 +2,7 @@ import scipy.io as sio
 
 # Load the RICE mat file
 mat = sio.loadmat(
-    "C:/Users/jiges/Downloads/T1_Fit_Results_RICE092_s1_256_INV1autoMask_B1.mat"
+    "C:/Users/jiges/Downloads/T1_Fit_Results_RICE096_s1_256_SPM.mat"
 )
 
 # Print keys to see what's in there
@@ -16,7 +16,7 @@ for k, v in mat.items():
 
 # Save fixed version
 sio.savemat(
-    "C:/Users/jiges/Downloads/RICE092_fixed.mat",
+    "C:/Users/jiges/Downloads/RICE096_final_fixed.mat",
     fixed
 )
 print("Saved fixed file.")

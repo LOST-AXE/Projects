@@ -84,9 +84,9 @@ def get_boundary_masks(wm: np.ndarray, gm: np.ndarray,
                 wm_prob_3d = nib.load(wm_path).get_fdata().astype(np.float32)
 
                 # Extract middle slice (same slice as all other processing)
-                x = gm_prob_3d.shape[2] // 2
-                gm_prob = gm_prob_3d[x, :, :]
-                wm_prob = wm_prob_3d[x, :, :]
+                x = gm_prob_3d.shape[1] // 2 - 40
+                gm_prob = gm_prob_3d[:, x, :]
+                wm_prob = wm_prob_3d[:, x, :]
 
                 # Strict thresholds 0.9 ensures only confidently
                 # pure tissue voxels are used as interior references.
